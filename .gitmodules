@@ -1,0 +1,3 @@
+[submodule "sequential-neural-testbed"]
+	path = sequential-neural-testbed
+	url = https://github.com/probml/sequential-neural-testbed
