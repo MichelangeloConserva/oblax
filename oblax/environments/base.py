@@ -1,30 +1,39 @@
 from copy import deepcopy
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 import chex
 import jax
 import haiku as hk
+from flax import struct
+
+if TYPE_CHECKING:
+    pass
+
+
+@struct.dataclass
+class EnvParams:
+    covariates: chex.Array
+    initial_env_params: chex.PyTreeDef
+    param_update: Callable
 
 
 class SequentialEnvironment:
     def __init__(
         self,
         seed: int,
-        initial_env_params: chex.PyTreeDef,
-        covariates: chex.Array,
-        param_update: Callable,
+        env_params: "EnvParams",
         output_f: Callable[[chex.PRNGKey, chex.Array, chex.PyTreeDef], chex.Array],
         batch_size: int,
     ):
-        self.initial_env_params = initial_env_params
-        self.param_update = param_update
+        self.initial_env_params = env_params.initial_env_params
+        self.param_update = env_params.param_update
         self.output_f = output_f
-        self.covariates = covariates
+        self.covariates = env_params.covariates
         self.batch_size = batch_size
 
         self.indices = None
-        self.N = len(covariates)
-        self.env_params = deepcopy(initial_env_params)
+        self.N = len(env_params.covariates)
+        self.env_params = deepcopy(env_params.initial_env_params)
         self.rng = hk.PRNGSequence(seed)
         self.cur_key = next(self.rng)
 
