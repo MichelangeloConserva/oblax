@@ -10,6 +10,7 @@ If you are interested in contributing you can check the project [Kanban board](h
 ### Linear regression 2d with non-stationary rotating parameter vector
 
 For a univariate linear regression problem in the form,
+
 $$
 Y = X \boldsymbol \beta_t + \epsilon, \quad \epsilon \sim \mathcal{N}(0, \sigma^2).
 $$
