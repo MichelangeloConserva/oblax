@@ -19,7 +19,7 @@ def linear_regression2d_anim_update(num, fig, env):
     """Produce the figure update to display animation visualization of the linear_regression2d non-stationary environment."""
     fig.clear()
 
-    Y_shown = next(env)
+    X_shown, Y_shown = next(env)
 
     x1, x2 = env.covariates.T
     xx, yy = jnp.meshgrid(
@@ -39,7 +39,7 @@ def linear_regression2d_anim_update(num, fig, env):
     ax1.set_title("Full data set")
 
     ax2 = fig.add_subplot(1, 3, 2, projection="3d")
-    ax2.scatter(*env.covariates[env.indices].T, Y_shown, color="tab:blue")
+    ax2.scatter(*X_shown.T, Y_shown, color="tab:blue")
     ax2.set_xlim(x1.min(), x1.max())
     ax2.set_ylim(x2.min(), x2.max())
     ax2.set_zlim(Y.min(), Y.max())
@@ -57,7 +57,7 @@ def logit_classification2d_anim_update(num, fig, env):
     """Produce the figure update to display animation visualization of the classification_regression2d non-stationary environment."""
     fig.clear()
 
-    Y_shown = next(env)
+    X_shown, Y_shown = next(env)
 
     x1, x2 = env.covariates.T
     xx, yy = jnp.meshgrid(
@@ -86,7 +86,7 @@ def logit_classification2d_anim_update(num, fig, env):
         (jax.nn.sigmoid(X @ env.env_params["beta"]) > 0.5).astype(int),
         cmap=plt.cm.coolwarm,
     )
-    ax2.scatter(*env.covariates[env.indices].T, c=Y_shown, cmap=plt.cm.seismic)
+    ax2.scatter(*X_shown.T, c=Y_shown, cmap=plt.cm.seismic)
     ax2.set_xlim(x1.min(), x1.max())
     ax2.set_ylim(x2.min(), x2.max())
     ax2.set_xlabel("$X_1$")
