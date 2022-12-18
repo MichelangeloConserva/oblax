@@ -60,6 +60,5 @@ class SequentialEnvironment:
         )
 
         # Compute and return the output for the given indices
-        return self.output_f(
-            self.cur_key, self.covariates[self.indices], self.env_params
-        )
+        X_cur = self.covariates[self.indices]
+        return X_cur, self.output_f(self.cur_key, X_cur, self.env_params)
