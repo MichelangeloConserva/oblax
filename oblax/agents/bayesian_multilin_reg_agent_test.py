@@ -88,7 +88,7 @@ class BayesMultiLinRegTest(parameterized.TestCase):
         )
         key = jax.random.PRNGKey(seed)
 
-        Sigma_samples, Matrix_samples = agent.sample_params(key, agent.prior_belief)
+        Matrix_samples, Sigma_samples = agent.sample_params(key, agent.prior_belief)
         chex.assert_shape(Matrix_samples, (m, d))
         chex.assert_shape(Sigma_samples, (m, m))
 
