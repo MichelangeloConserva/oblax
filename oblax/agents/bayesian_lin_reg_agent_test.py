@@ -84,7 +84,7 @@ class BayesLinRegTest(parameterized.TestCase):
     ):
         output_dim = 1
 
-        a_0 = b_0 = 1000
+        a_0 = b_0 = 1000.0
         lambda_0 = jnp.eye(2) * 0.01
         mu_0 = jnp.ones((2,)) * 1
         agent = BayesianUnivariateLinearReg(BeliefState(mu_0, lambda_0, a_0, b_0))
@@ -108,7 +108,7 @@ class BayesLinRegTest(parameterized.TestCase):
         input_dim: int,
         nsamples_params: int,
     ):
-        a_0 = b_0 = 10
+        a_0 = b_0 = 10.0
         lambda_0 = jnp.eye(input_dim) * 0.01
         mu_0 = jnp.ones((input_dim,)) * 1
         agent = BayesianUnivariateLinearReg(BeliefState(mu_0, lambda_0, a_0, b_0))

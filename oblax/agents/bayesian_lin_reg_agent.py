@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+import distrax
+from flax.struct import dataclass
 from typing import NamedTuple, Tuple, Union
 
 import chex
+import jax
 import jax.numpy as jnp
 import tensorflow_probability.substrates.jax as tfp
 
@@ -79,11 +81,20 @@ class BayesianUnivariateLinearReg(Agent):
         """Return the object encoding the given belief."""
         return BeliefState(mu, Lambda, a, b)
 
+    @staticmethod
+    @jax.jit
+    def _jupdate_suff_stats(
+        suff_stats: SufficientStatistic, x: chex.Array, y: chex.Array
+    ):
+        return SufficientStatistic(
+            suff_stats.XX + x.T @ x,
+            suff_stats.Xy + (x.T @ y).squeeze(),
+            suff_stats.yy + (y.T @ y).squeeze(),
+            suff_stats.n + len(x),
+        )
+
     def _update_suff_stats(self, x: chex.Array, y: chex.Array):
-        self.suff_stats.XX += x.T @ x
-        self.suff_stats.Xy += (x.T @ y).squeeze()
-        self.suff_stats.yy += float(y.T @ y)
-        self.suff_stats.n += len(x)
+        self.suff_stats = self._jupdate_suff_stats(self.suff_stats, x, y)
 
     def update(
         self,
@@ -106,30 +117,36 @@ class BayesianUnivariateLinearReg(Agent):
             If required it returns the posterior belief.
         """
 
-        if belief is None:
-            belief = self.prior_belief
-
         x = x.reshape(-1, self.d)
         y = y.reshape(-1, 1)
 
         self._update_suff_stats(x, y)
 
         if return_posterior:
+            if belief is None:
+                belief = self.prior_belief
+
             posterior_belief = BayesianUnivariateLinearReg.posterior_belief(
                 belief, self.suff_stats
             )
             return posterior_belief, Info()
 
-    def sample_params(self, key: chex.PRNGKey, belief: BeliefState) -> chex.ArrayTree:
-        """Sample parameters from the given belief."""
+    @staticmethod
+    @jax.jit
+    def jsample_params(key: chex.PRNGKey, belief: BeliefState) -> chex.ArrayTree:
         sigma_squared = tfd.InverseGamma(belief.a, belief.b).sample(seed=key)
 
         theta = tfd.MultivariateNormalFullCovariance(
-            belief.mu, sigma_squared * jnp.linalg.pinv(belief.Lambda)
+            belief.mu,
+            sigma_squared * jnp.linalg.pinv(belief.Lambda)
+            + jnp.eye(len(belief.Lambda)) * 1e-8,
         ).sample(seed=key)
         theta = theta.reshape(belief.mu.shape)
-
         return theta, sigma_squared
+
+    def sample_params(self, key: chex.PRNGKey, belief: BeliefState) -> chex.ArrayTree:
+        """Sample parameters from the given belief."""
+        return self.jsample_params(key, belief)
 
     def predict_given_params_regression(self, params: chex.ArrayTree, x: chex.Array):
         """Predict the value of the given covariates."""
@@ -137,9 +154,8 @@ class BayesianUnivariateLinearReg(Agent):
         pred = self.model_fn(mu_n, x)
 
         # n test examples, dimensionality of output
-        # pred_dist = distrax.MultivariateNormalDiag(loc=pred, covariance=sigma_squared * jnp.eye(len(pred))) # the output shape is (len(pred), len(pred)) for some reason here
-        pred_dist = tfd.MultivariateNormalFullCovariance(
-            pred, sigma_squared * jnp.eye(len(pred))
+        pred_dist = distrax.MultivariateNormalDiag(
+            pred, sigma_squared * jnp.ones(len(pred))
         )
 
         return pred_dist
